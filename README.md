@@ -1,5 +1,5 @@
 # shopping-cart 
-- Descargue todos los proyectos (4) en un solo workspace
+- Descargue todos los proyectos (5) en un solo workspace
 - Descargue el shoppin-cart postman collection
 - Importe en postman el .json
 - Ejecute los tres proyectos:
