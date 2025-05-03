@@ -33,7 +33,6 @@ public class AuthController {
     }
     @GetMapping("/validate")
     public ResponseEntity<?> validateToken(@RequestHeader("Authorization") String authHeader) {
-    	System.out.println("VALIDANDO....");
     	try {
 			return ResponseEntity.ok(service.validate(authHeader));
 		} catch (Exception e) {
