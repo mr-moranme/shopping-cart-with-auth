@@ -14,6 +14,8 @@ import org.springframework.web.bind.annotation.RestController;
 import com.example.orders.dto.OrderRequestDto;
 import com.example.orders.service.OrderService;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 @RestController
 @RequestMapping("/orders")
 public class OrderController {
@@ -22,8 +24,16 @@ public class OrderController {
 	private OrderService service;
 	
     @PostMapping
-    public ResponseEntity<?> createOrder(@RequestBody OrderRequestDto request) {
-        return ResponseEntity.ok(service.createOrder(request));
+    public ResponseEntity<?> createOrder(@RequestBody OrderRequestDto order, HttpServletRequest request) {
+        String authHeader = request.getHeader("Authorization");
+        String jwtToken = null;
+
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            jwtToken = authHeader.replace("Bearer ", "");
+        } else {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Missing or invalid Authorization header");
+        }
+        return ResponseEntity.ok(service.createOrder(order, jwtToken));
     }
     
     @GetMapping("/{id}")

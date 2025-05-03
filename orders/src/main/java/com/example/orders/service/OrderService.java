@@ -6,7 +6,14 @@ import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
 import com.example.common.dto.CustomerDto;
@@ -32,7 +39,7 @@ public class OrderService {
     @Value("${products.service.url}") // http://localhost:8081/products
     private String productServiceUrl;
     
-	public String createOrder(OrderRequestDto request) {
+	public String createOrder(OrderRequestDto request, String jwtToken) {
         CustomerDto customer = request.getCustomer();
         List<OrderDetailDto> items = request.getItems();
 
@@ -42,9 +49,7 @@ public class OrderService {
 
         List<OrderDetail> details = items.stream().map(item -> {        	
         	// Validate product exists
-        	String url = productServiceUrl + "/" + item.getProductId();
-            ProductDto product = restTemplate.getForObject(url, ProductDto.class);
-            if (product == null) {
+            if (!productExists(item.getProductId(), jwtToken)) {
                 throw new RuntimeException("Product ID " + item.getProductId() + " not found");
             }
             OrderDetail detail = new OrderDetail();
@@ -57,19 +62,57 @@ public class OrderService {
 
         order.setDetails(details);
 
-        return createOrderAndPay(order, request.getCustomer());
+        return createOrderAndPay(order, request.getCustomer(), jwtToken);
     }
     
-    public String createOrderAndPay(Orders order, CustomerDto customerDto) {
+    private String createOrderAndPay(Orders order, CustomerDto customerDto, String jwtToken) {
         // Save order
         Orders savedOrder = repository.save(order);
 
         // Call payment service
         PaymentRequest paymentRequest = new PaymentRequest(customerDto, convertToDtos(savedOrder.getDetails()));
-        String result = restTemplate.postForObject(paymentServiceUrl, paymentRequest, String.class);
+        
+        return (String) processRequest(jwtToken, paymentServiceUrl, paymentRequest, HttpMethod.POST).getBody();
 
-        return result;
     }
+    
+    private ResponseEntity<?> processRequest(String jwtToken, String url, Object request, HttpMethod method) {
+    	 HttpHeaders headers = new HttpHeaders();
+         headers.setContentType(MediaType.APPLICATION_JSON);
+         headers.setBearerAuth(jwtToken);
+         HttpEntity<?> requestEntity = new HttpEntity<>(request, headers);
+         
+         ResponseEntity<?> response = restTemplate.exchange(
+                 url,
+                 method,
+                 requestEntity,
+                 String.class
+             );
+         return response;
+    }
+    
+    private boolean productExists(Long productId, String jwtToken) {
+        try {
+            HttpHeaders headers = new HttpHeaders();
+            headers.setBearerAuth(jwtToken);
+
+            HttpEntity<Void> request = new HttpEntity<>(headers);
+
+            ResponseEntity<ProductDto> response = restTemplate.exchange(
+            		productServiceUrl + "/" + productId,
+                HttpMethod.GET,
+                request,
+                ProductDto.class
+            );
+
+            return response.getStatusCode() == HttpStatus.OK && response.getBody() != null;
+        } catch (HttpClientErrorException.NotFound e) {
+            return false; 
+        } catch (Exception e) {
+            throw new RuntimeException("Product ID: " + productId + " not found", e);
+        }
+    }
+    
     public Optional<Orders> getOrderById(Long id) {
         return repository.findById(id);
     }
