@@ -38,7 +38,10 @@ public class AuthService {
 	@Autowired
 	private CustomUserDetailsService userDetailsService;
 
-    public AuthResponse register(RegisterRequest request) {
+    public AuthResponse register(RegisterRequest request) throws Exception {
+    	if (userRepo.findByUsername(request.getUsername()).isPresent()) {
+    		throw new Exception("Invalid Credentials");
+    	}
         User user = new User();
         user.setUsername(request.getUsername());
         user.setPassword(encoder.encode(request.getPassword()));
@@ -69,10 +72,14 @@ public class AuthService {
         }
         String token = authHeader.substring(7);
         String username = jwtService.extractUsername(token);
-        UserDetails user = userDetailsService.loadUserByUsername(username);
-        if (!jwtService.isValid(token, user)) {
-        	throw new Exception("Invalid token");
-        }
-        return Map.of("username", username, "role", user.getAuthorities());
+        try {
+        	UserDetails user = userDetailsService.loadUserByUsername(username);
+        	 if (!jwtService.isValid(token, user)) {
+             	throw new Exception("Invalid token");
+             }
+        	 return Map.of("username", username, "role", user.getAuthorities());
+		} catch (Exception e) {
+			throw new Exception(e);
+		}
     }
 }
