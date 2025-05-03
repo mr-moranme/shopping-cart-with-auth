@@ -2,7 +2,8 @@
 - Descargue todos los proyectos (5) en un solo workspace
 - Descargue el shoppin-cart postman collection
 - Importe en postman el .json
-- Ejecute los tres proyectos:
+- Ejecute los cuatro proyectos:
+	- auth-service
 	- products
 	- payments
 	- orders
