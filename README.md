@@ -7,6 +7,10 @@
 	- payments
 	- orders
 - En postman se puede probar asi:
+	- micro servicio authorization/autentication
+		- POST auth/register (para el registro devuelve token)
+		- POST auth/login (para el login devuelve token)
+		- GET auth/validate (para validar token)
 	- micro servicio products
 		- GET products/getAll (Devuelve todos los productos)
 		- GET products/byId (Devuelve solo un producto)
@@ -16,7 +20,3 @@
 		- POST orders/sendOk (Envia una orden OK)
 		- POST orders/sendError (Envia una orden con Error)
 		- GET orders/byId (Consulta una orden)
-	- micro servicio authorization/autentication
-		- POST auth/register (para el registro devuelve token)
-		- POST auth/login (para el login devuelve token)
-		- GET auth/validate (para validar token)
